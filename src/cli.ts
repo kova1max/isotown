@@ -2,7 +2,7 @@
 // npx isotown "<city>" [--area 2] [--out dir]
 
 import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { fetchFrame } from "./data.js";
 import { MAX_AREA_KM2, makeFrame, toLocal } from "./geo.js";
@@ -142,9 +142,9 @@ async function main(argv: string[]): Promise<number> {
     attribution: "Map data © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright",
   };
   await writeFile(resolve(out, "isotown.json"), `${JSON.stringify(summary, null, 2)}\n`);
-  log(`wrote index.html, ${fmt(tiles)} tiles, poster.png, daynight.gif to ${out} in ${totalSeconds.toFixed(1)} s`);
+  log(`wrote index.html, ${fmt(tiles)} tiles, poster.png, daynight.gif to ${shown(out)} in ${totalSeconds.toFixed(1)} s`);
   log(`network: ${net.stats.requests} requests, ${net.stats.cacheHits} cache hits`);
-  log(`open ${resolve(out, "index.html")} in a browser to explore the map`);
+  log(`open ${shown(resolve(out, "index.html"))} in a browser to explore the map`);
   log(`Map data © OpenStreetMap contributors (ODbL). Keep this attribution when you share the images.`);
   return 0;
 }
@@ -172,6 +172,12 @@ function slug(s: string): string {
 
 function shortName(displayName: string): string {
   return displayName.split(",")[0].trim();
+}
+
+/** A path relative to the working directory when it is inside it. */
+function shown(path: string): string {
+  const rel = relative(process.cwd(), path);
+  return rel && !rel.startsWith("..") && !isAbsolute(rel) ? `./${rel}` : path;
 }
 
 function round1(x: number): number {

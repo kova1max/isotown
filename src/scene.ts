@@ -1,7 +1,7 @@
 // Classify OSM features into what gets drawn: typed buildings with roof planes,
 // ground areas, roads, rails, water lines, trees, and a sea mask.
 
-import { centroid, hash01, hashId, orientedRect, pointInRings, signedArea } from "./geometry.js";
+import { type OrientedRect, centroid, hash01, hashId, orientedRect, pointInRings, signedArea } from "./geometry.js";
 import type { AreaFeature, OsmData, Ring, Tags } from "./osm.js";
 import { type RGB, ROOFS, WALLS } from "./palette.js";
 
@@ -182,8 +182,6 @@ export function buildScene(data: OsmData, half: number): Scene {
     }
   }
 
-  // Highway areas and platforms tagged as closed ways come through as lines;
-  // pedestrian areas are already ground via `area=yes`.
   roads.sort((p, q) => p.rank - q.rank);
   grounds.sort((p, q) => p.prio - q.prio || q.area - p.area);
 
@@ -309,7 +307,7 @@ function makeBuilding(a: AreaFeature, stats: SceneStats): Building[] {
   const { wall, roofColor } = colours(kind, roof, seed);
   const rings = [...a.poly.outer, ...a.poly.inner];
   const outer = [...a.poly.outer.map(() => true), ...a.poly.inner.map(() => false)];
-  const planes = roofPlanes(roof, rect, wallTop, roofH, seed);
+  const planes = roofPlanes(roof, rect, wallTop, roofH);
   const shopFront = (kind === "flat" || kind === "block") && levels >= 3 && (t.shop !== undefined || type === "retail" || type === "commercial" || hash01(seed, 3) < 0.25);
   const main = finish({
     seed,
@@ -433,7 +431,7 @@ function roofHeight(roof: RoofShape, halfW: number, kind: BuildingKind): number 
   }
 }
 
-function roofPlanes(roof: RoofShape, r: ReturnType<typeof orientedRect>, top: number, h: number, seed: number): Plane[] {
+function roofPlanes(roof: RoofShape, r: OrientedRect, top: number, h: number): Plane[] {
   const bx = -r.ay;
   const by = r.ax;
   // h = top + s * (d - (P - C) . u)
@@ -474,13 +472,12 @@ function roofPlanes(roof: RoofShape, r: ReturnType<typeof orientedRect>, top: nu
       const towardViewer = bx - by > 0 ? 1 : -1;
       const ux = bx * towardViewer;
       const uy = by * towardViewer;
-      void seed;
       return [plane(ux, uy, W, h / (2 * W))];
     }
   }
 }
 
-function churchTower(r: ReturnType<typeof orientedRect>, wallTop: number, roofH: number, seed: number): Building {
+function churchTower(r: OrientedRect, wallTop: number, roofH: number, seed: number): Building {
   const side = Math.max(4, Math.min(9, r.halfW * 1.3));
   // Towers usually stand at the west end.
   const dir = r.ax < 0 ? 1 : -1;
@@ -498,7 +495,7 @@ function churchTower(r: ReturnType<typeof orientedRect>, wallTop: number, roofH:
     outer: [true],
     wallTop: top,
     roof: "pyramidal",
-    planes: roofPlanes("pyramidal", rect, top, spire, seed),
+    planes: roofPlanes("pyramidal", rect, top, spire),
     maxH: top + spire,
     wall: WALLS.stone,
     roofColor: copper ? ROOFS.copper : ROOFS.slate,
@@ -510,7 +507,7 @@ function churchTower(r: ReturnType<typeof orientedRect>, wallTop: number, roofH:
   });
 }
 
-function rooftopBox(r: ReturnType<typeof orientedRect>, outerRing: Ring, top: number, seed: number, i: number): Building | undefined {
+function rooftopBox(r: OrientedRect, outerRing: Ring, top: number, seed: number, i: number): Building | undefined {
   const side = 1.5 + hash01(seed, 20 + i) * 2.5;
   const fa = (hash01(seed, 30 + i) * 2 - 1) * Math.max(0, r.halfL - side - 1);
   const fb = (hash01(seed, 40 + i) * 2 - 1) * Math.max(0, r.halfW - side - 1);

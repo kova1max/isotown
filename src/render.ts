@@ -562,7 +562,7 @@ function drawWall(b: Building, id: number, L: Layout, buf: Buf, e0: number, n0: 
   const xEnd = (e1 + n1) * K + L.ox;
   const leftToRight = xEnd > xStart;
   const widthPx = Math.floor(Math.abs(xEnd - xStart));
-  const colBase = leftToRight ? Math.floor(xStart) : Math.floor(xStart);
+  const colBase = Math.floor(xStart);
   const lh = b.levelH;
   const rgb = buf.rgb;
 
