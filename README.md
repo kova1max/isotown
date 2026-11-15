@@ -118,11 +118,6 @@ npm install && npm run build
 node dist/cli.js "Amsterdam"
 ```
 
-## Why I built this
-
-<!-- Launch copy is written by hand before release; this section is a factual stand-in. -->
-Isometric maps of single cities keep turning up and people keep asking for their own city. Most of them are made with image models, one city at a time. OpenStreetMap already knows where every building is, how tall many of them are and what they are used for, so a set of plain rules should be able to draw any city in the same style, on a laptop, in seconds.
-
 ## Data and license
 
 The code is [MIT](LICENSE). Everything isotown draws is OpenStreetMap data, © OpenStreetMap contributors, available under the [Open Database License](https://www.openstreetmap.org/copyright). The attribution is embedded in `poster.png`, `daynight.gif` and the viewer, and must be kept when you share them.
