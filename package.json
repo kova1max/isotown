@@ -1,0 +1,44 @@
+{
+  "name": "isotown",
+  "version": "0.1.0",
+  "description": "Your city as a zoomable SimCity-2000-style pixel map, from OpenStreetMap, in one command",
+  "type": "module",
+  "bin": {
+    "isotown": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.js"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "openstreetmap",
+    "pixel-art",
+    "isometric",
+    "cli",
+    "map",
+    "generative-art"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kova1max/isotown.git"
+  },
+  "homepage": "https://github.com/kova1max/isotown#readme",
+  "license": "MIT",
+  "dependencies": {
+    "gifenc": "1.0.3",
+    "pngjs": "7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "18.19.130",
+    "@types/pngjs": "6.0.5",
+    "typescript": "5.9.3"
+  }
+}
