@@ -1,6 +1,8 @@
+// gifenc ships no types; this covers the part isotown uses. It is CommonJS,
+// so it is imported as a default export.
 declare module "gifenc" {
-  export type Palette = number[][];
-  export interface GIFEncoderInstance {
+  type Palette = number[][];
+  interface GIFEncoderInstance {
     writeFrame(
       index: Uint8Array,
       width: number,
@@ -10,15 +12,14 @@ declare module "gifenc" {
     finish(): void;
     bytes(): Uint8Array;
   }
-  export function GIFEncoder(opts?: { auto?: boolean }): GIFEncoderInstance;
-  export function quantize(
-    rgba: Uint8Array | Uint8ClampedArray,
-    maxColors: number,
-    opts?: { format?: "rgb565" | "rgb444" | "rgba4444"; oneBitAlpha?: boolean | number; clearAlpha?: boolean },
-  ): Palette;
-  export function applyPalette(
-    rgba: Uint8Array | Uint8ClampedArray,
-    palette: Palette,
-    format?: "rgb565" | "rgb444" | "rgba4444",
-  ): Uint8Array;
+  const gifenc: {
+    GIFEncoder(opts?: { auto?: boolean }): GIFEncoderInstance;
+    quantize(
+      rgba: Uint8Array | Uint8ClampedArray,
+      maxColors: number,
+      opts?: { format?: "rgb565" | "rgb444" | "rgba4444"; oneBitAlpha?: boolean | number; clearAlpha?: boolean },
+    ): Palette;
+    applyPalette(rgba: Uint8Array | Uint8ClampedArray, palette: Palette, format?: "rgb565" | "rgb444" | "rgba4444"): Uint8Array;
+  };
+  export default gifenc;
 }

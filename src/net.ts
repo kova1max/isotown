@@ -109,8 +109,9 @@ export class Net {
           }
           if (res.ok) {
             const text = await res.text();
-            if (text.trimStart().startsWith("{")) return text;
-            errors.push(`${mirror}: response was not JSON`);
+            const failure = overpassFailure(text);
+            if (!failure) return text;
+            errors.push(`${mirror}: ${failure}`);
             continue;
           }
           errors.push(`${mirror}: HTTP ${res.status}`);
@@ -180,6 +181,14 @@ export function overpassQuery(b: BBox): string {
   node["natural"="tree"](${bb});
 );
 out geom;`;
+}
+
+/** Overpass reports some failures inside an HTTP 200 body; never cache those. */
+export function overpassFailure(text: string): string | undefined {
+  if (!text.trimStart().startsWith("{")) return "response was not JSON";
+  const remark = /"remark"\s*:\s*"([^"]*)"/.exec(text.slice(-2000))?.[1];
+  if (remark && /error|timed out|out of memory/i.test(remark)) return remark;
+  return undefined;
 }
 
 function sleep(ms: number): Promise<void> {

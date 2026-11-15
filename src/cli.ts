@@ -1,0 +1,163 @@
+#!/usr/bin/env node
+// npx isotown "<city>" [--area 4] [--out dir]
+
+import { mkdir, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { parseArgs } from "node:util";
+import { fetchFrame } from "./data.js";
+import { MAX_AREA_KM2, makeFrame, toLocal } from "./geo.js";
+import { encodePng, renderImage } from "./image.js";
+import { DEFAULT_NOMINATIM, DEFAULT_OVERPASS, Net, VERSION, defaultCacheDir } from "./net.js";
+import { parseElements } from "./osm.js";
+import { dayNightGif, poster, viewerHtml, writeDeepZoom } from "./outputs.js";
+import { K, KZ, makeLayout } from "./render.js";
+import { buildScene } from "./scene.js";
+
+const HELP = `isotown ${VERSION} - your city as a zoomable isometric pixel map, from OpenStreetMap
+
+Usage: isotown "<place>" [options]
+       isotown "<lat>,<lon>" [options]
+
+Options:
+  --area <km2>          size of the square city core, up to ${MAX_AREA_KM2} (default 4)
+  --out <dir>           output directory (default ./isotown-<place>)
+  --gif-at <lat,lon>    centre of the day/night GIF (default: the map centre)
+  --overpass-url <url>  Overpass API endpoint (default: public mirrors, tried in turn)
+  --nominatim-url <url> Nominatim endpoint (default: ${DEFAULT_NOMINATIM})
+  --cache-dir <dir>     download cache (default: ${defaultCacheDir()})
+  -h, --help            show this help
+  -v, --version         show the version
+
+Writes index.html (deep-zoom viewer), map.dzi + map_files/, poster.png and
+daynight.gif. Map data © OpenStreetMap contributors, ODbL.`;
+
+async function main(argv: string[]): Promise<number> {
+  const { values, positionals } = parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: {
+      area: { type: "string" },
+      out: { type: "string" },
+      "gif-at": { type: "string" },
+      "overpass-url": { type: "string" },
+      "nominatim-url": { type: "string" },
+      "cache-dir": { type: "string" },
+      help: { type: "boolean", short: "h" },
+      version: { type: "boolean", short: "v" },
+    },
+  });
+  if (values.version) {
+    console.log(VERSION);
+    return 0;
+  }
+  if (values.help || positionals.length === 0) {
+    console.log(HELP);
+    return values.help ? 0 : 2;
+  }
+  const place = positionals.join(" ").trim();
+  const area = values.area === undefined ? 4 : Number(values.area);
+  if (!Number.isFinite(area) || area <= 0) throw new UsageError(`--area must be a positive number of km2, got "${values.area}"`);
+  if (area > MAX_AREA_KM2) {
+    throw new UsageError(
+      `--area ${area} is above the ${MAX_AREA_KM2} km2 limit. isotown draws a city core from the public Overpass API, ` +
+        `which is shared by everyone; whole cities need a local extract (planned as --pbf).`,
+    );
+  }
+  const gifAt = values["gif-at"] === undefined ? undefined : parseLatLon(values["gif-at"]);
+  if (values["gif-at"] !== undefined && !gifAt) throw new UsageError(`--gif-at must look like "52.37,4.89", got "${values["gif-at"]}"`);
+  const out = resolve(values.out ?? `isotown-${slug(place)}`);
+  const mirrors = values["overpass-url"] ? [values["overpass-url"]] : DEFAULT_OVERPASS;
+  const net = new Net(values["cache-dir"] ?? defaultCacheDir(), (m) => log(m));
+  const started = Date.now();
+
+  let lat: number;
+  let lon: number;
+  let name: string;
+  const direct = parseLatLon(place);
+  if (direct) {
+    [lat, lon] = direct;
+    name = place;
+  } else {
+    const hit = await net.geocode(values["nominatim-url"] ?? DEFAULT_NOMINATIM, place);
+    lat = hit.lat;
+    lon = hit.lon;
+    name = hit.name;
+  }
+  log(`geocoded: ${name} (${lat.toFixed(5)}, ${lon.toFixed(5)})`);
+
+  const frame = makeFrame(lat, lon, area);
+  const report = await fetchFrame(net, frame, mirrors, (done, total, cached) => {
+    log(`fetched ${done}/${total} cells${cached ? " (cached)" : ""}`);
+  });
+  const data = parseElements(frame, report.elements);
+  const scene = buildScene(data, frame.half);
+  log(`${fmt(scene.stats.buildings)} buildings, ${fmt(scene.roads.length)} roads, ${fmt(scene.stats.trees)} trees in ${area} km2`);
+
+  const layout = makeLayout(scene);
+  log(`rendering ${fmt(layout.width)} x ${fmt(layout.height)} px`);
+  const img = renderImage(scene, layout);
+
+  await mkdir(out, { recursive: true });
+  const title = shortName(name);
+  const subtitle = `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? "N" : "S"} ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"} · ${area} km2`;
+  const tiles = await writeDeepZoom(out, img);
+  await writeFile(resolve(out, "index.html"), viewerHtml(title, subtitle, img.width, img.height));
+  await writeFile(resolve(out, "poster.png"), encodePng(poster(img, title, subtitle.replace("·", "-"))));
+  let centre = { x: layout.ox, y: layout.oy };
+  if (gifAt) {
+    const [e, n] = toLocal(frame, gifAt[0], gifAt[1]);
+    centre = { x: (e + n) * K + layout.ox, y: (e - n) * (K / 2) - 10 * KZ + layout.oy };
+  }
+  await writeFile(resolve(out, "daynight.gif"), dayNightGif(scene, layout, centre));
+
+  const secs = ((Date.now() - started) / 1000).toFixed(1);
+  log(`wrote index.html, ${fmt(tiles)} tiles, poster.png, daynight.gif to ${out} in ${secs} s`);
+  log(`network: ${net.stats.requests} requests, ${net.stats.cacheHits} cache hits`);
+  log(`Map data © OpenStreetMap contributors (ODbL). Keep this attribution when you share the images.`);
+  return 0;
+}
+
+class UsageError extends Error {}
+
+function parseLatLon(s: string): [number, number] | undefined {
+  const m = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/.exec(s);
+  if (!m) return undefined;
+  const lat = Number(m[1]);
+  const lon = Number(m[2]);
+  if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return undefined;
+  return [lat, lon];
+}
+
+function slug(s: string): string {
+  const out = s
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return out || "map";
+}
+
+function shortName(displayName: string): string {
+  return displayName.split(",")[0].trim();
+}
+
+function fmt(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
+function log(msg: string): void {
+  process.stderr.write(`${msg}\n`);
+}
+
+main(process.argv.slice(2)).then(
+  (code) => process.exit(code),
+  (err: unknown) => {
+    if (err instanceof UsageError) {
+      log(`isotown: ${err.message}`);
+      process.exit(2);
+    }
+    log(`isotown: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  },
+);
