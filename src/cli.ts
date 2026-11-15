@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// npx isotown "<city>" [--area 4] [--out dir]
+// npx isotown "<city>" [--area 2] [--out dir]
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -19,7 +19,7 @@ Usage: isotown "<place>" [options]
        isotown "<lat>,<lon>" [options]
 
 Options:
-  --area <km2>          size of the square city core, up to ${MAX_AREA_KM2} (default 4)
+  --area <km2>          size of the square city core, up to ${MAX_AREA_KM2} (default 2)
   --out <dir>           output directory (default ./isotown-<place>)
   --gif-at <lat,lon>    centre of the day/night GIF (default: the map centre)
   --overpass-url <url>  Overpass API endpoint (default: public mirrors, tried in turn)
@@ -55,7 +55,7 @@ async function main(argv: string[]): Promise<number> {
     return values.help ? 0 : 2;
   }
   const place = positionals.join(" ").trim();
-  const area = values.area === undefined ? 4 : Number(values.area);
+  const area = values.area === undefined ? 2 : Number(values.area);
   if (!Number.isFinite(area) || area <= 0) throw new UsageError(`--area must be a positive number of km2, got "${values.area}"`);
   if (area > MAX_AREA_KM2) {
     throw new UsageError(
