@@ -1,0 +1,8 @@
+[
+  { "slug": "amsterdam", "label": "Amsterdam", "kind": "canal city", "query": "Amsterdam" },
+  { "slug": "barcelona-eixample", "label": "Barcelona, Eixample", "kind": "dense grid", "query": "L'Eixample, Barcelona" },
+  { "slug": "tallinn-old-town", "label": "Tallinn, old town", "kind": "old town", "query": "Vanalinn, Tallinn" },
+  { "slug": "valletta", "label": "Valletta", "kind": "coastal", "query": "Valletta" },
+  { "slug": "levittown", "label": "Levittown, NY", "kind": "suburb", "query": "Levittown, New York" },
+  { "slug": "juliaca", "label": "Juliaca, Peru", "kind": "OSM-poor town", "query": "Juliaca, Peru" }
+]

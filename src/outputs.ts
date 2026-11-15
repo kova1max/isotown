@@ -82,17 +82,27 @@ export function viewerHtml(title: string, subtitle: string, width: number, heigh
 <div class="attribution">Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> &middot; rendered with <a href="https://github.com/kova1max/isotown">isotown</a></div>
 <script src="https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/openseadragon.min.js"></script>
 <script>
-  OpenSeadragon({
+  const viewer = OpenSeadragon({
     id: "map",
     tileSources: { Image: { xmlns: "http://schemas.microsoft.com/deepzoom/2008", Url: "map_files/", Format: "png", Overlap: "0", TileSize: "${TILE}", Size: { Width: "${width}", Height: "${height}" } } },
     drawer: "canvas",
     prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/",
-    imageSmoothingEnabled: false,
+    navigationControlAnchor: OpenSeadragon.ControlAnchor.TOP_RIGHT,
+    imageSmoothingEnabled: true,
     maxZoomPixelRatio: 10,
     visibilityRatio: 0.6,
     showNavigator: true,
     navigatorPosition: "BOTTOM_LEFT",
     gestureSettingsMouse: { clickToZoom: false },
+  });
+  // Smooth when zoomed out, hard pixels once a map pixel is bigger than a screen pixel.
+  let smooth = true;
+  viewer.addHandler("zoom", () => {
+    const z = viewer.viewport.viewportToImageZoom(viewer.viewport.getZoom(true));
+    if (z < 1 !== smooth) {
+      smooth = z < 1;
+      viewer.drawer.setImageSmoothingEnabled(smooth);
+    }
   });
 </script>
 </body>
@@ -133,11 +143,9 @@ export function poster(img: Image, title: string, subtitle: string, maxWidth = 3
 const FRAMES = 16;
 const NIGHT_SKY: RGB = [18, 26, 58];
 
-/** Pick the 800x500 window with the most building pixels near the centre, render it, and animate. */
+/** Render an 800x500 window around `at` and animate it from day to night. */
 export function dayNightGif(scene: Scene, L: Layout, at: { x: number; y: number }, w = 800, h = 500): Uint8Array {
-  const f = renderViewport(scene, L, { x0: Math.round(at.x - w / 2), y0: Math.round(at.y - h / 2), w, h });
-  const frames: Uint8Array[] = [];
-  for (let k = 0; k < FRAMES; k++) frames.push(nightFrame(f, k));
+  const frames = dayNightFrames(scene, L, at, w, h);
   const sample = new Uint8Array(w * h * 4 * 2);
   sample.set(frames[0], 0);
   sample.set(frames[FRAMES - 1], w * h * 4);
@@ -152,13 +160,21 @@ export function dayNightGif(scene: Scene, L: Layout, at: { x: number; y: number 
   return gif.bytes();
 }
 
+/** The RGBA frames of the day/night animation, from full day to full night. */
+export function dayNightFrames(scene: Scene, L: Layout, at: { x: number; y: number }, w: number, h: number): Uint8Array[] {
+  const f = renderViewport(scene, L, { x0: Math.round(at.x - w / 2), y0: Math.round(at.y - h / 2), w, h });
+  const frames: Uint8Array[] = [];
+  for (let k = 0; k < FRAMES; k++) frames.push(nightFrame(f, k));
+  return frames;
+}
+
 function nightFrame(f: Frame, k: number): Uint8Array {
   const dark = clamp01((k - 1) / 7);
   const lights = clamp01((k - 5) / 9);
   const threshold = lights * 255;
   const n = f.vp.w * f.vp.h;
   const out = new Uint8Array(n * 4);
-  const keep = 1 - 0.6 * dark;
+  const keep = 1 - 0.68 * dark;
   for (let i = 0; i < n; i++) {
     let r = f.rgb[i * 3];
     let g = f.rgb[i * 3 + 1];
@@ -186,7 +202,7 @@ function nightFrame(f: Frame, k: number): Uint8Array {
 }
 
 /** Burn the attribution into the bottom-right corner on a dark plate. */
-function stampAttribution(data: Uint8Array, w: number, h: number): void {
+export function stampAttribution(data: Uint8Array, w: number, h: number): void {
   const img: Image = { width: w, height: h, data };
   const tw = textWidth(ATTRIBUTION, 1);
   const x0 = w - tw - 8;

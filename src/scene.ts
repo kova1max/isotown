@@ -141,8 +141,8 @@ export function buildScene(data: OsmData, half: number): Scene {
     const t = a.tags;
     if (t.building && t.building !== "no") {
       if (isUnderground(t)) continue;
-      const [cx, cy] = centroid(a.poly.outer[0]);
-      if (Math.abs(cx) > half || Math.abs(cy) > half) continue;
+      // Only whole buildings: one cut by the map edge would overhang the base.
+      if (!a.poly.outer.every((r) => r.every((v) => Math.abs(v) <= half))) continue;
       const made = makeBuilding(a, stats);
       for (const b of made) buildings.push(b);
       continue;
@@ -284,7 +284,7 @@ function makeBuilding(a: AreaFeature, stats: SceneStats): Building[] {
 
   let levels = levelsTag ?? defaultLevels(kind, type, area, jitter);
   if (kind === "block" && levelsTag === undefined && area > 3000) kind = "flat";
-  if (levels >= 7 && kind !== "church") kind = "flat";
+  if (levels >= 6 && kind !== "church" && kind !== "house") kind = "flat";
 
   // Roof rule: an explicit roof:shape tag wins, otherwise the class decides.
   let roof = roofFromTag(t["roof:shape"]) ?? defaultRoof(kind, type, levels, area, aspect, rectangularity);

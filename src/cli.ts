@@ -85,10 +85,13 @@ async function main(argv: string[]): Promise<number> {
   }
   log(`geocoded: ${name} (${lat.toFixed(5)}, ${lon.toFixed(5)})`);
 
+  const fetchStarted = Date.now();
   const frame = makeFrame(lat, lon, area);
   const report = await fetchFrame(net, frame, mirrors, (done, total, cached) => {
     log(`fetched ${done}/${total} cells${cached ? " (cached)" : ""}`);
   });
+  const fetchSeconds = (Date.now() - fetchStarted) / 1000;
+  const renderStarted = Date.now();
   const data = parseElements(frame, report.elements);
   const scene = buildScene(data, frame.half);
   log(`${fmt(scene.stats.buildings)} buildings, ${fmt(scene.roads.length)} roads, ${fmt(scene.stats.trees)} trees in ${area} km2`);
@@ -110,8 +113,36 @@ async function main(argv: string[]): Promise<number> {
   }
   await writeFile(resolve(out, "daynight.gif"), dayNightGif(scene, layout, centre));
 
-  const secs = ((Date.now() - started) / 1000).toFixed(1);
-  log(`wrote index.html, ${fmt(tiles)} tiles, poster.png, daynight.gif to ${out} in ${secs} s`);
+  const renderSeconds = (Date.now() - renderStarted) / 1000;
+  const totalSeconds = (Date.now() - started) / 1000;
+  const st = scene.stats;
+  const pct = (n: number) => (st.buildings === 0 ? 0 : Math.round((1000 * n) / st.buildings) / 10);
+  const summary = {
+    isotown: VERSION,
+    place,
+    name,
+    lat,
+    lon,
+    areaKm2: area,
+    cells: report.cells,
+    cachedCells: report.cachedCells,
+    requests: net.stats.requests,
+    buildings: st.buildings,
+    buildingsWithHeightPct: pct(st.withHeight),
+    buildingsWithLevelsPct: pct(st.withLevels),
+    buildingsTypedPct: pct(st.typed),
+    roads: scene.roads.length,
+    trees: st.trees,
+    imageWidth: img.width,
+    imageHeight: img.height,
+    tiles,
+    fetchSeconds: round1(fetchSeconds),
+    renderSeconds: round1(renderSeconds),
+    totalSeconds: round1(totalSeconds),
+    attribution: "Map data © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright",
+  };
+  await writeFile(resolve(out, "isotown.json"), `${JSON.stringify(summary, null, 2)}\n`);
+  log(`wrote index.html, ${fmt(tiles)} tiles, poster.png, daynight.gif to ${out} in ${totalSeconds.toFixed(1)} s`);
   log(`network: ${net.stats.requests} requests, ${net.stats.cacheHits} cache hits`);
   log(`Map data © OpenStreetMap contributors (ODbL). Keep this attribution when you share the images.`);
   return 0;
@@ -140,6 +171,10 @@ function slug(s: string): string {
 
 function shortName(displayName: string): string {
   return displayName.split(",")[0].trim();
+}
+
+function round1(x: number): number {
+  return Math.round(x * 10) / 10;
 }
 
 function fmt(n: number): string {

@@ -256,7 +256,7 @@ function drawGround(scene: Scene, L: Layout, buf: Buf): void {
   waterEdges(buf);
   for (const r of scene.roads) {
     if (r.kind === "major" || r.kind === "minor" || r.kind === "motorway") {
-      fillFlat(L, buf, thickLine(L, r.pts, r.width + 3.2), GROUND.sidewalk, Mat.Road);
+      fillFlat(L, buf, thickLine(L, r.pts, r.width + 6), GROUND.sidewalk, Mat.Road, true);
     }
   }
   for (const r of scene.roads) drawRoad(L, buf, r);
@@ -285,14 +285,17 @@ function fillGround(L: Layout, buf: Buf, rings: number[][], kind: GroundKind, un
   });
 }
 
-/** Fill each ring on its own (a union of overlapping parts). */
-function fillFlat(L: Layout, buf: Buf, rings: number[][], c: RGB, mat: number): void {
+/** Fill each ring on its own (a union of overlapping parts), optionally leaving water alone. */
+function fillFlat(L: Layout, buf: Buf, rings: number[][], c: RGB, mat: number, keepWater = false): void {
   const vp = buf.vp;
   for (const r of rings) {
     scan(vp, [r], (y, x0, x1) => {
       const [xa, xb] = diamond(L, y, x0, x1);
       const row = (y - vp.y0) * vp.w - vp.x0;
-      for (let x = xa; x <= xb; x++) put(buf, row + x, c, mat);
+      for (let x = xa; x <= xb; x++) {
+        if (keepWater && buf.mat[row + x] === Mat.Water) continue;
+        put(buf, row + x, c, mat);
+      }
     });
   }
 }
