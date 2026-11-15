@@ -16,7 +16,7 @@ Nothing else to install, no API key, no sign-up. isotown turns the OpenStreetMap
 
 ```text
 $ npx isotown "Amsterdam"
-geocoded: Amsterdam, Noord-Holland, Nederland (52.37308, 4.89245)
+geocoded: Amsterdam, North Holland, Netherlands (52.37308, 4.89245)
 fetched 1/4 cells
 fetched 2/4 cells
 fetched 3/4 cells
