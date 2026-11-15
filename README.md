@@ -12,7 +12,7 @@ npx isotown "Amsterdam"
 
 Nothing else to install, no API key, no sign-up. isotown turns the OpenStreetMap buildings, roads, water and trees of a city core into gabled, windowed, hard-pixel sprites you can zoom from the whole district down to a single window, then lights the windows up at night. No AI model and no GPU: every pixel comes from rules over OSM tags.
 
-**5,761 buildings of central Amsterdam rendered in 3.4 s on an Apple M4 laptop, 0 GPU, 0 API keys** (download time not included; it depends on the public Overpass servers). Rerun it yourself: [`bench/run.sh`](bench/run.sh), raw numbers in [`bench/results.json`](bench/results.json).
+**5,761 buildings of central Amsterdam rendered in 2.7 s on an Apple M4 laptop, 0 GPU, 0 API keys.** That is the render alone, from the download cache. The first run also has to download the area from the public Overpass servers, which took 161 s to 1,168 s per 2 km² city core in our cold-cache run, almost all of it queueing on busy servers. Rerun both yourself with [`bench/run.sh`](bench/run.sh); raw numbers in [`bench/results.json`](bench/results.json) and [`bench/results-cold.json`](bench/results-cold.json).
 
 ```text
 $ npx isotown "Amsterdam"
@@ -23,7 +23,10 @@ fetched 3/4 cells
 fetched 4/4 cells
 5,761 buildings, 1,718 roads, 1,347 trees in 2 km2
 rendering 4,292 x 2,353 px
-wrote index.html, 247 tiles, poster.png, daynight.gif to ./isotown-amsterdam
+wrote index.html, 247 tiles, poster.png, daynight.gif to ./isotown-amsterdam in 383.0 s
+network: 7 requests, 0 cache hits
+open ./isotown-amsterdam/index.html in a browser to explore the map
+Map data © OpenStreetMap contributors (ODbL). Keep this attribution when you share the images.
 
 isotown-amsterdam/
 ├── index.html      zoomable viewer, works from disk or any static host

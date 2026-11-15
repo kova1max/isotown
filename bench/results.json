@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-11-15T19:51:39.639Z",
+  "ranAt": "2026-11-15T20:37:56.175Z",
   "cold": false,
   "machine": {
     "cpu": "Apple M4",
@@ -29,12 +29,12 @@
       "imageWidth": 4292,
       "imageHeight": 2353,
       "tiles": 247,
-      "fetchSeconds": 0.1,
-      "renderSeconds": 3.4,
-      "totalSeconds": 3.4,
+      "fetchSeconds": 0,
+      "renderSeconds": 2.7,
+      "totalSeconds": 2.7,
       "attribution": "Map data © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright",
-      "wallSeconds": 3.5,
-      "outputKiB": 13472
+      "wallSeconds": 2.8,
+      "outputKiB": 13536
     },
     {
       "slug": "barcelona-eixample",
@@ -57,11 +57,11 @@
       "imageHeight": 2335,
       "tiles": 247,
       "fetchSeconds": 0,
-      "renderSeconds": 3.1,
-      "totalSeconds": 3.2,
+      "renderSeconds": 2.5,
+      "totalSeconds": 2.6,
       "attribution": "Map data © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright",
-      "wallSeconds": 3.3,
-      "outputKiB": 10280
+      "wallSeconds": 2.7,
+      "outputKiB": 10364
     },
     {
       "slug": "tallinn-old-town",
@@ -84,11 +84,11 @@
       "imageHeight": 2455,
       "tiles": 247,
       "fetchSeconds": 0,
-      "renderSeconds": 2.5,
-      "totalSeconds": 2.5,
+      "renderSeconds": 2.7,
+      "totalSeconds": 2.7,
       "attribution": "Map data © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright",
-      "wallSeconds": 2.6,
-      "outputKiB": 12756
+      "wallSeconds": 2.8,
+      "outputKiB": 12844
     },
     {
       "slug": "piran",
@@ -111,10 +111,10 @@
       "imageHeight": 2304,
       "tiles": 230,
       "fetchSeconds": 0,
-      "renderSeconds": 1.9,
-      "totalSeconds": 1.9,
+      "renderSeconds": 2.3,
+      "totalSeconds": 2.3,
       "attribution": "Map data © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright",
-      "wallSeconds": 1.9,
+      "wallSeconds": 2.4,
       "outputKiB": 6672
     },
     {
@@ -138,11 +138,11 @@
       "imageHeight": 2235,
       "tiles": 230,
       "fetchSeconds": 0,
-      "renderSeconds": 2.1,
-      "totalSeconds": 2.1,
+      "renderSeconds": 2.4,
+      "totalSeconds": 2.4,
       "attribution": "Map data © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright",
-      "wallSeconds": 2.2,
-      "outputKiB": 12244
+      "wallSeconds": 2.5,
+      "outputKiB": 12340
     },
     {
       "slug": "juliaca",
@@ -165,11 +165,11 @@
       "imageHeight": 2295,
       "tiles": 230,
       "fetchSeconds": 0,
-      "renderSeconds": 1.9,
-      "totalSeconds": 1.9,
+      "renderSeconds": 2.1,
+      "totalSeconds": 2.1,
       "attribution": "Map data © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright",
-      "wallSeconds": 2,
-      "outputKiB": 8800
+      "wallSeconds": 2.2,
+      "outputKiB": 8888
     }
   ]
 }
