@@ -85,7 +85,8 @@ async function main(argv: string[]): Promise<number> {
   }
   const gifAt = values["gif-at"] === undefined ? undefined : parseLatLon(values["gif-at"]);
   if (values["gif-at"] !== undefined && !gifAt) throw new UsageError(`--gif-at must look like "52.37,4.89", got "${values["gif-at"]}"`);
-  const out = resolve(values.out ?? `isotown-${slug(place)}`);
+  const direct = parseLatLon(place);
+  const out = resolve(values.out ?? `isotown-${slug(direct ? place.replace(/-/g, "m") : place)}`);
   const mirrors = values["overpass-url"] ? [values["overpass-url"]] : DEFAULT_OVERPASS;
   const net = new Net(values["cache-dir"] ?? defaultCacheDir(), (m) => log(m));
   const started = Date.now();
@@ -93,7 +94,6 @@ async function main(argv: string[]): Promise<number> {
   let lat: number;
   let lon: number;
   let name: string;
-  const direct = parseLatLon(place);
   if (direct) {
     [lat, lon] = direct;
     name = place;
@@ -107,6 +107,10 @@ async function main(argv: string[]): Promise<number> {
 
   const fetchStarted = Date.now();
   const frame = makeFrame(lat, lon, area);
+  const gifLocal = gifAt && toLocal(frame, gifAt[0], gifAt[1]);
+  if (gifLocal && Math.max(Math.abs(gifLocal[0]), Math.abs(gifLocal[1])) > frame.half) {
+    throw new UsageError(`--gif-at ${values["gif-at"]} is outside the ${area} km2 map around ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+  }
   const report = await fetchFrame(net, frame, mirrors, (done, total, cached) => {
     log(`fetched ${done}/${total} cells${cached ? " (cached)" : ""}`);
   });
@@ -127,8 +131,8 @@ async function main(argv: string[]): Promise<number> {
   await writeFile(resolve(out, "index.html"), viewerHtml(title, subtitle, img.width, img.height));
   await writeFile(resolve(out, "poster.png"), encodePng(poster(img, title, subtitle.replace("·", "-"))));
   let centre = { x: layout.ox, y: layout.oy };
-  if (gifAt) {
-    const [e, n] = toLocal(frame, gifAt[0], gifAt[1]);
+  if (gifLocal) {
+    const [e, n] = gifLocal;
     centre = { x: (e + n) * K + layout.ox, y: (e - n) * (K / 2) - 10 * KZ + layout.oy };
   }
   await writeFile(resolve(out, "daynight.gif"), dayNightGif(scene, layout, centre));
