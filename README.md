@@ -103,7 +103,7 @@ isotown is for when you want *your* city, as pixel art, from one command, with a
 |---|---|---|
 | `--area <km2>` | `2` | size of the square city core, up to 25 |
 | `--out <dir>` | `./isotown-<place>` | output directory |
-| `--gif-at <lat,lon>` | map centre | centre of the day/night GIF |
+| `--gif-at <lat,lon>` | map centre | centre of the day/night GIF, inside the map |
 | `--overpass-url <url>` | public mirrors | your own Overpass endpoint |
 | `--nominatim-url <url>` | `https://nominatim.openstreetmap.org` | your own Nominatim endpoint |
 | `--cache-dir <dir>` | `~/.cache/isotown` | download cache (`$XDG_CACHE_HOME/isotown` if set) |
