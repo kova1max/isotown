@@ -144,6 +144,7 @@ async function main(argv: string[]): Promise<number> {
   await writeFile(resolve(out, "isotown.json"), `${JSON.stringify(summary, null, 2)}\n`);
   log(`wrote index.html, ${fmt(tiles)} tiles, poster.png, daynight.gif to ${out} in ${totalSeconds.toFixed(1)} s`);
   log(`network: ${net.stats.requests} requests, ${net.stats.cacheHits} cache hits`);
+  log(`open ${resolve(out, "index.html")} in a browser to explore the map`);
   log(`Map data © OpenStreetMap contributors (ODbL). Keep this attribution when you share the images.`);
   return 0;
 }

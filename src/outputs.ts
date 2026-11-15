@@ -18,13 +18,15 @@ const INK_DIM: RGB = [150, 156, 170];
 // ---------------------------------------------------------------- deep zoom
 
 const TILE = 256;
+// One pixel of overlap avoids hairline seams between tiles when the viewer smooths.
+const OVERLAP = 1;
 
 /** Write map.dzi and map_files/<level>/<col>_<row>.png. Returns the tile count. */
 export async function writeDeepZoom(dir: string, img: Image): Promise<number> {
   const maxLevel = Math.ceil(Math.log2(Math.max(img.width, img.height)));
   await writeFile(
     join(dir, "map.dzi"),
-    `<?xml version="1.0" encoding="UTF-8"?>\n<Image xmlns="http://schemas.microsoft.com/deepzoom/2008" Format="png" Overlap="0" TileSize="${TILE}">\n  <Size Width="${img.width}" Height="${img.height}"/>\n</Image>\n`,
+    `<?xml version="1.0" encoding="UTF-8"?>\n<Image xmlns="http://schemas.microsoft.com/deepzoom/2008" Format="png" Overlap="${OVERLAP}" TileSize="${TILE}">\n  <Size Width="${img.width}" Height="${img.height}"/>\n</Image>\n`,
   );
   let level = img;
   let tiles = 0;
@@ -35,9 +37,11 @@ export async function writeDeepZoom(dir: string, img: Image): Promise<number> {
     const rows = Math.ceil(level.height / TILE);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const w = Math.min(TILE, level.width - c * TILE);
-        const h = Math.min(TILE, level.height - r * TILE);
-        const tile = cropImage(level, c * TILE, r * TILE, w, h);
+        const x0 = Math.max(0, c * TILE - OVERLAP);
+        const y0 = Math.max(0, r * TILE - OVERLAP);
+        const x1 = Math.min(level.width, (c + 1) * TILE + OVERLAP);
+        const y1 = Math.min(level.height, (r + 1) * TILE + OVERLAP);
+        const tile = cropImage(level, x0, y0, x1 - x0, y1 - y0);
         await writeFile(join(ldir, `${c}_${r}.png`), encodeTile(tile));
         tiles++;
       }
@@ -82,27 +86,24 @@ export function viewerHtml(title: string, subtitle: string, width: number, heigh
 <div class="attribution">Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> &middot; rendered with <a href="https://github.com/kova1max/isotown">isotown</a></div>
 <script src="https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/openseadragon.min.js"></script>
 <script>
-  const viewer = OpenSeadragon({
+  const source = new OpenSeadragon.DziTileSource(${width}, ${height}, ${TILE}, ${OVERLAP}, "map_files/", "png");
+  // The tiles are opaque PNGs. Saying so stops the viewer clearing each tile's
+  // rectangle first, which leaves hairline seams between tiles.
+  source.hasTransparency = () => false;
+  OpenSeadragon({
     id: "map",
-    tileSources: { Image: { xmlns: "http://schemas.microsoft.com/deepzoom/2008", Url: "map_files/", Format: "png", Overlap: "0", TileSize: "${TILE}", Size: { Width: "${width}", Height: "${height}" } } },
+    tileSources: source,
     drawer: "canvas",
     prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/",
     navigationControlAnchor: OpenSeadragon.ControlAnchor.TOP_RIGHT,
-    imageSmoothingEnabled: true,
+    // Hard pixels when zoomed in. Zoomed out, the viewer shows a pyramid level
+    // that was already box-filtered down, so it still looks smooth.
+    imageSmoothingEnabled: false,
     maxZoomPixelRatio: 10,
     visibilityRatio: 0.6,
     showNavigator: true,
     navigatorPosition: "BOTTOM_LEFT",
     gestureSettingsMouse: { clickToZoom: false },
-  });
-  // Smooth when zoomed out, hard pixels once a map pixel is bigger than a screen pixel.
-  let smooth = true;
-  viewer.addHandler("zoom", () => {
-    const z = viewer.viewport.viewportToImageZoom(viewer.viewport.getZoom(true));
-    if (z < 1 !== smooth) {
-      smooth = z < 1;
-      viewer.drawer.setImageSmoothingEnabled(smooth);
-    }
   });
 </script>
 </body>

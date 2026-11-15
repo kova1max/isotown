@@ -43,7 +43,7 @@ export const GROUND = {
   sand: [222, 204, 150],
   rock: [160, 154, 144],
   paving: [196, 186, 164],
-  pavingLine: [178, 168, 148],
+  pavingLine: [186, 176, 155],
   plaza: [206, 194, 168],
   parking: [132, 132, 132],
   concreteLot: [178, 176, 166],

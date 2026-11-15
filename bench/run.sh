@@ -1,7 +1,8 @@
 #!/bin/sh
 # Benchmark: render the six gallery cities with the CLI and record, per city,
 # buildings, km2, wall-clock seconds, Overpass requests and output size.
-# Results go to bench/results.json together with the machine they ran on.
+# Results go to bench/results.json (bench/results-cold.json with --cold)
+# together with the machine they ran on.
 #
 #   sh bench/run.sh            # uses the normal download cache (~/.cache/isotown)
 #   sh bench/run.sh --cold     # empty cache: every cell is fetched from Overpass
@@ -35,7 +36,7 @@ node -e '
   const rows = fs.readFileSync(process.argv[1], "utf8").trim().split("\n").map(JSON.parse);
   const machine = { cpu: os.cpus()[0].model, cores: os.cpus().length, memoryGiB: Math.round(os.totalmem() / 2 ** 30), os: `${os.type()} ${os.release()} ${os.arch()}`, node: process.version };
   const out = { ranAt: new Date().toISOString(), cold: process.argv[2] === "--cold", machine, cities: rows };
-  fs.writeFileSync("bench/results.json", JSON.stringify(out, null, 2) + "\n");
+  fs.writeFileSync(out.cold ? "bench/results-cold.json" : "bench/results.json", JSON.stringify(out, null, 2) + "\n");
   for (const r of rows) console.log(`${r.slug.padEnd(20)} ${String(r.buildings).padStart(6)} buildings  ${r.areaKm2} km2  render ${r.renderSeconds}s  total ${r.wallSeconds}s  ${r.requests} requests  ${(r.outputKiB / 1024).toFixed(1)} MiB`);
 ' "$work/rows.jsonl" "${1:-}"
 rm -rf "$work"
