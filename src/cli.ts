@@ -31,20 +31,40 @@ Options:
 Writes index.html (deep-zoom viewer), map.dzi + map_files/, poster.png and
 daynight.gif. Map data © OpenStreetMap contributors, ODbL.`;
 
+const OPTIONS = {
+  area: { type: "string" },
+  out: { type: "string" },
+  "gif-at": { type: "string" },
+  "overpass-url": { type: "string" },
+  "nominatim-url": { type: "string" },
+  "cache-dir": { type: "string" },
+  help: { type: "boolean", short: "h" },
+  version: { type: "boolean", short: "v" },
+} as const;
+
+/** Lets a negative "lat,lon" stand as the place or an option value instead of reading as a short flag. */
+function coordinateArgs(argv: string[]): string[] {
+  const args: string[] = [];
+  const coords: string[] = [];
+  for (const a of argv) {
+    if (!a.startsWith("-") || !parseLatLon(a)) {
+      args.push(a);
+      continue;
+    }
+    const prev = args[args.length - 1];
+    const name = prev?.startsWith("--") ? prev.slice(2) : "";
+    if (name in OPTIONS && OPTIONS[name as keyof typeof OPTIONS].type === "string") args[args.length - 1] = `${prev}=${a}`;
+    else coords.push(a);
+  }
+  if (coords.length === 0) return args;
+  return args.includes("--") ? [...args, ...coords] : [...args, "--", ...coords];
+}
+
 async function main(argv: string[]): Promise<number> {
   const { values, positionals } = parseArgs({
-    args: argv,
+    args: coordinateArgs(argv),
     allowPositionals: true,
-    options: {
-      area: { type: "string" },
-      out: { type: "string" },
-      "gif-at": { type: "string" },
-      "overpass-url": { type: "string" },
-      "nominatim-url": { type: "string" },
-      "cache-dir": { type: "string" },
-      help: { type: "boolean", short: "h" },
-      version: { type: "boolean", short: "v" },
-    },
+    options: OPTIONS,
   });
   if (values.version) {
     console.log(VERSION);
@@ -101,7 +121,7 @@ async function main(argv: string[]): Promise<number> {
   const img = renderImage(scene, layout);
 
   await mkdir(out, { recursive: true });
-  const title = shortName(name);
+  const title = direct ? place : shortName(name);
   const subtitle = `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? "N" : "S"} ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"} · ${area} km2`;
   const tiles = await writeDeepZoom(out, img);
   await writeFile(resolve(out, "index.html"), viewerHtml(title, subtitle, img.width, img.height));

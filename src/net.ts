@@ -74,7 +74,7 @@ export class Net {
   }
 
   async geocode(nominatimUrl: string, query: string): Promise<GeocodeResult> {
-    const url = `${nominatimUrl.replace(/\/$/, "")}/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
+    const url = `${nominatimUrl.replace(/\/$/, "")}/search?format=jsonv2&limit=1&accept-language=en&q=${encodeURIComponent(query)}`;
     const { value } = await this.cached<NominatimHit[]>("nominatim", url, async () => {
       // Nominatim usage policy: at most one request per second per application.
       const res = await this.request(url, { headers: { Accept: "application/json" } }, 1100);
